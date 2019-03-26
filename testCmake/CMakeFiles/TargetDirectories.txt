@@ -1,0 +1,3 @@
+/home/tom/cv/testCmake/CMakeFiles/edit_cache.dir
+/home/tom/cv/testCmake/CMakeFiles/rebuild_cache.dir
+/home/tom/cv/testCmake/CMakeFiles/opencv_example.dir
