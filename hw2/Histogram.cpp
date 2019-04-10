@@ -90,6 +90,23 @@ void textbookExample(){
 }
 
 
+void Question1(){
+	/*** Question1 ***/
+	HistogramEqualizer(image, result1);
+	equalizeHist(image, cvResult1);
+	Mat Q1diff;
+	Mat mask;
+//	subtract(result1, cvResult1, Q1diff, mask, -1); //src1, src2, dst, mask, dtype
+	Q1diff = result1 - cvResult1;
+
+	namedWindow("result1", WINDOW_AUTOSIZE);
+	namedWindow("cvResult1", WINDOW_AUTOSIZE);
+	namedWindow("Q1diff", WINDOW_AUTOSIZE);
+	imshow("result1", result1);
+	imshow("cvResult1", cvResult1);
+	imshow("Q1diff", Q1diff);
+}
+
 void convertToHSV(Mat &src, Mat &dst){
 	dst.create(src.size(), src.type());
 
@@ -140,16 +157,69 @@ void convertToHSV(Mat &src, Mat &dst){
 void hsvToBgr(Mat &src, Mat &dst){
 	for(int i = 0; i < src.cols; i++){
 		for(int j = 0; j < src.rows; j++){		
-			int h = src.at<Vec3b>(i, j)[0];
-			int s = src.at<Vec3b>(i, j)[1];
-			int v = src.at<Vec3b>(i, j)[2];
+			int h = src.at<Vec3b>(i, j)[0];//0~180
+			double s = src.at<Vec3b>(i, j)[1];//0~255
+			double v = src.at<Vec3b>(i, j)[2];//0~255
+			h *= 2;
+			s /= 255;
+			v /= 255;
 			int hi = (h/60) % 6;
-			
+		/*	
+			int f = h/60 - hi;
+		//	int p = v * (1 - s); //v, s乘過 255 
+			int p = v - v*s/255;
+		//	int q = v * (1 - f * s);
+			int q = v - v*f*s/255;
+		//	int t = v * (1 - (1 - f) * s); //1 - s + sf
+			int t = v - v*s/255 + v*s*f/255;*/
 
+			double f = (double)h/60 - hi;
+			//https://zh.wikipedia.org/wiki/HSL%E5%92%8CHSV%E8%89%B2%E5%BD%A9%E7%A9%BA%E9%97%B4
+			//https://stackoverflow.com/questions/9695329/c-how-to-round-a-double-to-an-int
+			int p = (int)(v * (1 - s) * 255 + 0.5); //v, s乘過 255 
+			int q = (int)(v * (1 - f * s) * 255 + 0.5);
+			int t = (int)(v * (1 - (1 - f) * s) * 255 + 0.5); //1 - s + sf
 
-			dst.at<Vec3b>(i, j)[0] = h;
-			dst.at<Vec3b>(i, j)[1] = s;
-			dst.at<Vec3b>(i, j)[2] = v;
+			v *= 255;
+
+			int r, g, b;
+
+			switch(hi){
+				case 0:
+					r = v;
+					g = t;
+					b = p;
+					break;
+				case 1:
+					r = q;
+					g = v;
+					b = p;
+					break;
+				case 2:
+					r = p;
+					g = v;
+					b = t;
+					break;
+				case 3:
+					r = p;
+					g = q;
+					b = v;
+					break;
+				case 4:
+					r = t;
+					g = p;
+					b = v;
+					break;
+				case 5:
+					r = v;
+					g = p;
+					b = q;
+					break;
+			}
+
+			dst.at<Vec3b>(i, j)[0] = b;
+			dst.at<Vec3b>(i, j)[1] = g;
+			dst.at<Vec3b>(i, j)[2] = r;
 		}
 	}
 }
@@ -171,7 +241,7 @@ void Question2(){
 	merge(temp, cvResult2_1);
 
 	Mat Q2_1diff = result2_1 - cvResult2_1;
-	/*
+	
 	namedWindow("Display Image2", WINDOW_AUTOSIZE);
 	namedWindow("result2_1", WINDOW_AUTOSIZE);
 	namedWindow("cvResult2_1", WINDOW_AUTOSIZE);
@@ -179,7 +249,7 @@ void Question2(){
 	imshow("result2_1", result2_1);
 	imshow("cvResult2_1", cvResult2_1);
 	namedWindow("Q2_1diff", WINDOW_AUTOSIZE);
-	imshow("Q2_1diff", Q2_1diff);*/
+	imshow("Q2_1diff", Q2_1diff);// */
 
 
 
@@ -190,37 +260,33 @@ void Question2(){
 	vector<Mat> hsv(3);
 	//myHSV
 	convertToHSV(image2, result2_2);
-	for(int i = 0; i < 3; i++){
-		cout << (int)image2.at<Vec3b>(0, 0)[i] << " ";
-	}cout << endl;
+//	for(int i = 0; i < 3; i++){
+//		cout << (int)image2.at<Vec3b>(0, 0)[i] << " ";
+//	}cout << endl;
 
-	for(int i = 0; i < 3; i++){
-		cout << (int)result2_2.at<Vec3b>(0, 0)[i] << " ";
-	}cout << endl;
-
-
+//	for(int i = 0; i < 3; i++){
+//		cout << (int)result2_2.at<Vec3b>(0, 0)[i] << " ";
+//	}cout << endl;
 	split(result2_2, hsv); 
 	temp[0] = hsv[0];
 	temp[1] = hsv[1];
 	HistogramEqualizer(hsv[2], temp[2]);
 	merge(temp, result2_2);
+	hsvToBgr(result2_2, result2_2);
+//	cvtColor(result2_2, result2_2, COLOR_HSV2BGR);
+
 
 	//opencv
 	cvtColor(image2, cvResult2_2, COLOR_BGR2HSV);
-	
-	for(int i = 0; i < 3; i++){
-		cout << (int)cvResult2_2.at<Vec3b>(0, 0)[i] << " ";
-	}cout << endl;
-
+//	for(int i = 0; i < 3; i++){
+//		cout << (int)cvResult2_2.at<Vec3b>(0, 0)[i] << " ";
+//	}cout << endl;
 	split(cvResult2_2, hsv);
 	temp[0] = hsv[0];
 	temp[1] = hsv[1];
 	equalizeHist(hsv[2], temp[2]);
 	merge(temp, cvResult2_2);
-
 	cout << result2_2.type() << endl;
-
-	cvtColor(result2_2, result2_2, COLOR_HSV2BGR);
 	cvtColor(cvResult2_2, cvResult2_2, COLOR_HSV2BGR);
 
 	namedWindow("result2_2", WINDOW_AUTOSIZE);
@@ -228,27 +294,108 @@ void Question2(){
 	namedWindow("cvResult2_2", WINDOW_AUTOSIZE);
 	imshow("cvResult2_2", cvResult2_2);
 
-	
+	Mat Q2_2diff = result2_2 - cvResult2_2;
+	namedWindow("Q2_2diff", WINDOW_AUTOSIZE);
+	imshow("Q2_2diff", Q2_2diff);
+}
+
+
+void convertToYCrCb(Mat &src, Mat &dst){
+	dst.create(src.size(), src.type());
+
+	for(int i = 0; i < src.cols; i++){ 
+		for(int j = 0; j < src.rows; j++){
+			double Y, Cr, Cb;
+			int delta = 128;
+			double b = src.at<Vec3b>(i, j)[0];
+			double g = src.at<Vec3b>(i, j)[1];
+			double r = src.at<Vec3b>(i, j)[2];
+
+			Y = 0.299*r + 0.587*g + 0.114*b;
+			Cr = (r-Y)*0.713 + delta;
+			Cb = (b-Y)*0.564 + delta;
+
+			dst.at<Vec3b>(i, j)[0] = (int)(Y+0.5);
+			dst.at<Vec3b>(i, j)[1] = (int)(Cr+0.5);
+			dst.at<Vec3b>(i, j)[2] = (int)(Cb+0.5);
+		}
+	}
+}
+
+void YCrCbToBgr(Mat &src, Mat &dst){
+	for(int i = 0; i < src.cols; i++){ 
+		for(int j = 0; j < src.rows; j++){
+			int r, g, b;
+			int delta = 128;
+			double Y = src.at<Vec3b>(i, j)[0];
+			double Cr = src.at<Vec3b>(i, j)[1];
+			double Cb = src.at<Vec3b>(i, j)[2];
+
+			r = Y + 1.403*(Cr - delta) + 0.5;
+			g = Y - 0.714*(Cr - delta) - 0.344*(Cb - delta) + 0.5;
+			b = Y + 1.773*(Cb - delta) + 0.5;
+			if(r > 255) r = 255;
+			if(r < 0) r = 0;
+			if(g > 255) g = 255;
+			if(g < 0) g = 0;
+			if(b > 255) b = 255;
+			if(b < 0) b = 0;
+			dst.at<Vec3b>(i, j)[0] = b;
+			dst.at<Vec3b>(i, j)[1] = g;
+			dst.at<Vec3b>(i, j)[2] = r;
+		}
+	}
 }
 
 void Question2_3(){
 	/*** YCrCb ***/
 	//https://docs.opencv.org/4.1.0/de/d25/imgproc_color_conversions.html#color_convert_rgb_hls
-
+	convertToYCrCb(image2, result2_3);
+/*	for(int i = 0; i < 3; i++){
+		cout << (int)image2.at<Vec3b>(0, 0)[i] <<" ";
+	}cout << endl;
+	for(int i = 0; i < 3; i++){
+		cout << (int)result2_3.at<Vec3b>(0, 0)[i] <<" ";
+	}cout << endl;*/
 	vector<Mat> YCrCb(3);
-	cvtColor(image2, result2_3, COLOR_BGR2YCrCb);
 	split(result2_3, YCrCb);
 	vector<Mat> temp(YCrCb.begin(), YCrCb.end());
+	HistogramEqualizer(YCrCb[0], temp[0]);
+	temp[1] = YCrCb[1];
+	temp[2] = YCrCb[2];
+	merge(temp, result2_3);
+
+	YCrCbToBgr(result2_3, result2_3);
+//	cvtColor(result2_3, result2_3, COLOR_YCrCb2BGR);
+	namedWindow("result2_3", WINDOW_AUTOSIZE);
+	imshow("result2_3", result2_3);
+
+	//opencv
+	cvtColor(image2, cvResult2_3, COLOR_BGR2YCrCb);
+/*	for(int i = 0; i < 3; i++){
+		cout << (int)cvResult2_3.at<Vec3b>(0, 0)[i] <<" ";
+	}cout << endl;*/
+	split(cvResult2_3, YCrCb);
 	equalizeHist(YCrCb[0], temp[0]);
 	temp[1] = YCrCb[1];
 	temp[2] = YCrCb[2];
 	merge(temp, cvResult2_3);
 
 	cvtColor(cvResult2_3, cvResult2_3, COLOR_YCrCb2BGR);
+/*	for(int i = 0; i < 3; i++){
+		cout << (int)result2_3.at<Vec3b>(0, 0)[i] <<" ";
+	}cout << endl;
+	for(int i = 0; i < 3; i++){
+		cout << (int)cvResult2_3.at<Vec3b>(0, 0)[i] <<" ";
+	}cout << endl;*/
 	namedWindow("cvResult2_3", WINDOW_AUTOSIZE);
 	imshow("cvResult2_3", cvResult2_3);
 
-
+	Mat Q2_3diff;
+	absdiff(result2_3, cvResult2_3, Q2_3diff);
+//	Mat Q2_3diff = result2_3 - cvResult2_3;
+	namedWindow("Q2_3diff", WINDOW_AUTOSIZE);
+	imshow("Q2_3diff", Q2_3diff);
 
 }
 
@@ -275,39 +422,19 @@ int main(int argc, char** argv )
 	
 	
 	result1.create(image.size(), CV_8U);
-//	cvResult1.create(image.size(), CV_8U);
-
 	result2_1.create(image2.size(), CV_8UC3);
 	cvResult2_1.create(image2.size(), CV_8UC3);
 
+	namedWindow("Display Image", WINDOW_AUTOSIZE);
+	imshow("Display Image", image);
+//	textbookExample();
+	Question1();// */
 
-	/*** Question1 ***/
-	HistogramEqualizer(image, result1);
-	equalizeHist(image, cvResult1);
-	Mat Q1diff;
-	Mat mask;
-//	subtract(result1, cvResult1, Q1diff, mask, -1); //src1, src2, dst, mask, dtype
-	Q1diff = result1 - cvResult1;
-
-	/*
-	namedWindow("Display Image", WINDOW_AUTOSIZE ); //創建一個 window 並給名稱
-	imshow("Display Image", image); //給定一個 window，並給要顯示的圖片
-	namedWindow("result1", WINDOW_AUTOSIZE);
-	namedWindow("cvResult1", WINDOW_AUTOSIZE);
-	namedWindow("Q1diff", WINDOW_AUTOSIZE);
-	imshow("result1", result1);
-	imshow("cvResult1", cvResult1);
-	imshow("Q1diff", Q1diff);*/
-
-
-
-//	Question2();
 	namedWindow("Display Image2", WINDOW_AUTOSIZE);
 	imshow("Display Image2", image2);
-
+	Question2();
 	Question2_3();
 
-//	textbookExample();
 
 	waitKey(0);
 	return 0;
