@@ -90,6 +90,71 @@ void textbookExample(){
 }
 
 
+void convertToHSV(Mat &src, Mat &dst){
+	dst.create(src.size(), src.type());
+
+	for(int i = 0; i < src.cols; i++){ //!! cols & rows 相反
+		for(int j = 0; j < src.rows; j++){
+			int h = 0, s = 0, v = 0;
+			int min; //max = v
+			int b = src.at<Vec3b>(i, j)[0];//b
+			int g = src.at<Vec3b>(i, j)[1];//g
+			int r = src.at<Vec3b>(i, j)[2];//r
+
+			v = b>g?b:g;
+			v = v>r?v:r;
+			min = b>g?g:b;
+			min = min>r?r:min;
+			
+			if(v == 0){
+				s = 0;
+			}else{
+				s = (v - min) * 255 / v; //本來 s 0~1 先乘 255
+			}
+
+//			cout << "inHSV:" << r << " " << g << " " << b;
+			if(v == 0){
+				h = 0;
+			}else if(v == r){
+				h = 60*(g-b)/(v - min);
+			}else if(v == g){ 
+				h = 120 + 60*(b-r)/(v - min);
+			}else{
+				h = 240 + 60*(r-g)/(v - min);
+			}
+			if(h != 0){
+				h %= 360;
+				h += 360;
+				h %= 360;
+			}
+//			cout << " " << h << endl;
+			h /=2 ;
+
+			dst.at<Vec3b>(i, j)[0] = h;
+			dst.at<Vec3b>(i, j)[1] = s;
+			dst.at<Vec3b>(i, j)[2] = v;
+		}
+	}
+}
+
+void hsvToBgr(Mat &src, Mat &dst){
+	for(int i = 0; i < src.cols; i++){
+		for(int j = 0; j < src.rows; j++){		
+			int h = src.at<Vec3b>(i, j)[0];
+			int s = src.at<Vec3b>(i, j)[1];
+			int v = src.at<Vec3b>(i, j)[2];
+			int hi = (h/60) % 6;
+			
+
+
+			dst.at<Vec3b>(i, j)[0] = h;
+			dst.at<Vec3b>(i, j)[1] = s;
+			dst.at<Vec3b>(i, j)[2] = v;
+		}
+	}
+}
+
+
 void Question2(){
 
 	/*** 2-1 rgb ***/
@@ -106,8 +171,15 @@ void Question2(){
 	merge(temp, cvResult2_1);
 
 	Mat Q2_1diff = result2_1 - cvResult2_1;
+	/*
+	namedWindow("Display Image2", WINDOW_AUTOSIZE);
+	namedWindow("result2_1", WINDOW_AUTOSIZE);
+	namedWindow("cvResult2_1", WINDOW_AUTOSIZE);
+	imshow("Display Image2", image2);
+	imshow("result2_1", result2_1);
+	imshow("cvResult2_1", cvResult2_1);
 	namedWindow("Q2_1diff", WINDOW_AUTOSIZE);
-	imshow("Q2_1diff", Q2_1diff);
+	imshow("Q2_1diff", Q2_1diff);*/
 
 
 
@@ -116,24 +188,8 @@ void Question2(){
 	//https://stackoverflow.com/questions/50449602/wrong-hsv-conversion-from-rgb
 	//https://stackoverflow.com/questions/43307959/how-to-get-hsv-and-lab-color-space/43319977#43319977
 	vector<Mat> hsv(3);
-	cvtColor(image2, cvResult2_2, COLOR_BGR2HSV);
-	for(int i = 0; i < 3; i++){
-		cout << (int)cvResult2_2.at<Vec3b>(0, 0)[i] << " ";
-	}cout << endl;
-
-//	cout << cvResult2_2 << endl;
-	split(cvResult2_2, hsv); 
-	for(int i = 0; i < 3; i++){
-		hsv[i].convertTo(hsv[i], CV_16U);
-		temp[i] = Mat(image2.size(), CV_16U);
-	}
-	temp[0] = hsv[0] * 2;
-	temp[1] = hsv[1] * 100 / 255;
-	temp[2] = hsv[2] * 100 / 255;
-	merge(temp, result2_2);
-
-	cout << result2_2.type() << endl;
-
+	//myHSV
+	convertToHSV(image2, result2_2);
 	for(int i = 0; i < 3; i++){
 		cout << (int)image2.at<Vec3b>(0, 0)[i] << " ";
 	}cout << endl;
@@ -142,9 +198,30 @@ void Question2(){
 		cout << (int)result2_2.at<Vec3b>(0, 0)[i] << " ";
 	}cout << endl;
 
+
+	split(result2_2, hsv); 
+	temp[0] = hsv[0];
+	temp[1] = hsv[1];
+	HistogramEqualizer(hsv[2], temp[2]);
+	merge(temp, result2_2);
+
+	//opencv
+	cvtColor(image2, cvResult2_2, COLOR_BGR2HSV);
+	
 	for(int i = 0; i < 3; i++){
 		cout << (int)cvResult2_2.at<Vec3b>(0, 0)[i] << " ";
 	}cout << endl;
+
+	split(cvResult2_2, hsv);
+	temp[0] = hsv[0];
+	temp[1] = hsv[1];
+	equalizeHist(hsv[2], temp[2]);
+	merge(temp, cvResult2_2);
+
+	cout << result2_2.type() << endl;
+
+	cvtColor(result2_2, result2_2, COLOR_HSV2BGR);
+	cvtColor(cvResult2_2, cvResult2_2, COLOR_HSV2BGR);
 
 	namedWindow("result2_2", WINDOW_AUTOSIZE);
 	imshow("result2_2", result2_2);
@@ -152,10 +229,28 @@ void Question2(){
 	imshow("cvResult2_2", cvResult2_2);
 
 	
+}
+
+void Question2_3(){
+	/*** YCrCb ***/
+	//https://docs.opencv.org/4.1.0/de/d25/imgproc_color_conversions.html#color_convert_rgb_hls
+
+	vector<Mat> YCrCb(3);
+	cvtColor(image2, result2_3, COLOR_BGR2YCrCb);
+	split(result2_3, YCrCb);
+	vector<Mat> temp(YCrCb.begin(), YCrCb.end());
+	equalizeHist(YCrCb[0], temp[0]);
+	temp[1] = YCrCb[1];
+	temp[2] = YCrCb[2];
+	merge(temp, cvResult2_3);
+
+	cvtColor(cvResult2_3, cvResult2_3, COLOR_YCrCb2BGR);
+	namedWindow("cvResult2_3", WINDOW_AUTOSIZE);
+	imshow("cvResult2_3", cvResult2_3);
+
 
 
 }
-
 
 int main(int argc, char** argv )
 {
@@ -193,25 +288,24 @@ int main(int argc, char** argv )
 	Mat mask;
 //	subtract(result1, cvResult1, Q1diff, mask, -1); //src1, src2, dst, mask, dtype
 	Q1diff = result1 - cvResult1;
-/*
+
+	/*
 	namedWindow("Display Image", WINDOW_AUTOSIZE ); //創建一個 window 並給名稱
+	imshow("Display Image", image); //給定一個 window，並給要顯示的圖片
 	namedWindow("result1", WINDOW_AUTOSIZE);
 	namedWindow("cvResult1", WINDOW_AUTOSIZE);
 	namedWindow("Q1diff", WINDOW_AUTOSIZE);
-	imshow("Display Image", image); //給定一個 window，並給要顯示的圖片
 	imshow("result1", result1);
 	imshow("cvResult1", cvResult1);
 	imshow("Q1diff", Q1diff);*/
 
 
 
-	Question2();
-/*	namedWindow("Display Image2", WINDOW_AUTOSIZE);
-	namedWindow("result2_1", WINDOW_AUTOSIZE);
-	namedWindow("cvResult2_1", WINDOW_AUTOSIZE);
+//	Question2();
+	namedWindow("Display Image2", WINDOW_AUTOSIZE);
 	imshow("Display Image2", image2);
-	imshow("result2_1", result2_1);
-	imshow("cvResult2_1", cvResult2_1);*/
+
+	Question2_3();
 
 //	textbookExample();
 
