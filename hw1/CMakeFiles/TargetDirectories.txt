@@ -1,3 +1,0 @@
-/home/tom/cv/hw1/CMakeFiles/rebuild_cache.dir
-/home/tom/cv/hw1/CMakeFiles/DisplayImage.dir
-/home/tom/cv/hw1/CMakeFiles/edit_cache.dir
