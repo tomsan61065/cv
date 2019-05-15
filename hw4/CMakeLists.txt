@@ -6,6 +6,7 @@ find_package( OpenCV REQUIRED )
 
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
+set(CMAKE_CXX_STANDARD 11) # 啟用 c++ 11
 #由 .cpp file 建立執行檔
 add_executable( HarrisCorner HarrisCorner.cpp )
 
