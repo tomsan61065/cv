@@ -83,8 +83,8 @@ void drawCircle(Mat &image, Mat &corner, int thresh=200){
 
 int main(int argc, char** argv )
 {
-	//image = imread( "test.jpg", 0);//讀圖
-	image = imread("chessBoard.jpg", 0);
+	image = imread( "test.jpg", 0);//讀圖
+	//image = imread("chessBoard.jpg", 0);
 	//image = imread("targetPicture.jpg", 0);							
 								//(檔案名稱, flag < 0原圖; flag=0 灰階; flag>0 BGR) 
 
@@ -123,10 +123,6 @@ int main(int argc, char** argv )
 	convertScaleAbs( cvResultTemp, cvResult);
 	imshow("cvHarris", cvResult);
 
-	Mat draw = image.clone();
-	drawCircle(draw, cvResultTemp);
-	imshow("circleCV", draw);
-
 //textbook formula for corner
 	HarrisCorner(image, result, 2, -1);
 	Mat resultTemp;
@@ -134,10 +130,6 @@ int main(int argc, char** argv )
 	convertScaleAbs( resultTemp, result );
 	//result.convertTo(result, CV_8U);
 	imshow("textBookFormulaHarris", result);
-
-	draw = image.clone();
-	drawCircle(draw, resultTemp, 170);
-	imshow("circleTextF", draw);
 
 //use CV formula for corner
 	Mat result2;
@@ -148,10 +140,20 @@ int main(int argc, char** argv )
 	//result.convertTo(result, CV_8U);
 	imshow("cvFormulaHarris", result2);
 
+//draw circle
+	Mat draw = image.clone();
+	drawCircle(draw, cvResultTemp, 200);
+	imshow("circleCV", draw);
+
 	draw = image.clone();
-	drawCircle(draw, result2Temp);
+	drawCircle(draw, resultTemp, 170);
+	imshow("circleTextF", draw);
+
+	draw = image.clone();
+	drawCircle(draw, result2Temp, 200);
 	imshow("circleCVF", draw);
 
+//difference
 	imshow("cvResult - cvFormula", cvResult - result2);
 
 	waitKey(0);
