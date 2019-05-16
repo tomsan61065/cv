@@ -57,7 +57,7 @@ void HarrisCorner(Mat &src, Mat &dst, int blockSize, double k){
 				}
 				//det(M)/trace(M) = (DxDx*DyDy - DxDy*DxDy)/(DxDx + DyDy)
 				//det(M) - k * (trace(M))^2 = (DxDx*DyDy - DxDy*DxDy) - k * (DxDx + DyDy)^2
-				if(k == 0){
+				if(k < 0){
 					dst.at<float>(i, j) = (dxx*dyy - dxy*dxy)/(dxx + dyy);
 				}else{
 					dst.at<float>(i, j) = (dxx*dyy - dxy*dxy) - k * (dxx + dyy)*(dxx + dyy);
@@ -67,9 +67,25 @@ void HarrisCorner(Mat &src, Mat &dst, int blockSize, double k){
 	}
 }
 
+
+void drawCircle(Mat &image, Mat &corner, int thresh=200){ 
+	for( int i = 0; i < corner.rows ; i++ )
+	{
+		for( int j = 0; j < corner.cols; j++ )
+		{
+			if( (int) corner.at<float>(i,j) > thresh )
+			{
+				circle( image, Point(j,i), 5,  Scalar(0), 2, 8, 0 );
+			}
+		}
+	}
+}
+
 int main(int argc, char** argv )
 {
-	image = imread( "test.jpg", 0);//讀圖
+	//image = imread( "test.jpg", 0);//讀圖
+	image = imread("chessBoard.jpg", 0);
+	//image = imread("targetPicture.jpg", 0);							
 								//(檔案名稱, flag < 0原圖; flag=0 灰階; flag>0 BGR) 
 
 	//變成一樣大小
@@ -100,27 +116,43 @@ int main(int argc, char** argv )
 	Mat result;
 	Mat cvResult;
 
-	//Opencv harris corner
+//Opencv harris corner
 	cornerHarris(image, cvResult, 2, 3, 0.04);//常見介於 0.04 ~ 0.06
-	normalize( cvResult, cvResult, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
-	convertScaleAbs( cvResult, cvResult);
+	Mat cvResultTemp;
+	normalize( cvResult, cvResultTemp, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
+	convertScaleAbs( cvResultTemp, cvResult);
 	imshow("cvHarris", cvResult);
 
+	Mat draw = image.clone();
+	drawCircle(draw, cvResultTemp);
+	imshow("circleCV", draw);
 
-	HarrisCorner(image, result, 2, 0.00);
-	normalize( result, result, 0, 255, NORM_MINMAX, CV_32FC1);
-	convertScaleAbs( result, result );
+//textbook formula for corner
+	HarrisCorner(image, result, 2, -1);
+	Mat resultTemp;
+	normalize( result, resultTemp, 0, 255, NORM_MINMAX, CV_32FC1);
+	convertScaleAbs( resultTemp, result );
 	//result.convertTo(result, CV_8U);
 	imshow("textBookFormulaHarris", result);
 
+	draw = image.clone();
+	drawCircle(draw, resultTemp, 170);
+	imshow("circleTextF", draw);
+
+//use CV formula for corner
 	Mat result2;
 	HarrisCorner(image, result2, 2, 0.04);
-	normalize( result2, result2, 0, 255, NORM_MINMAX, CV_32FC1);
-	convertScaleAbs( result2, result2 );
+	Mat result2Temp;
+	normalize( result2, result2Temp, 0, 255, NORM_MINMAX, CV_32FC1);
+	convertScaleAbs( result2Temp, result2 );
 	//result.convertTo(result, CV_8U);
 	imshow("cvFormulaHarris", result2);
 
+	draw = image.clone();
+	drawCircle(draw, result2Temp);
+	imshow("circleCVF", draw);
 
+	imshow("cvResult - cvFormula", cvResult - result2);
 
 	waitKey(0);
 	return 0;
