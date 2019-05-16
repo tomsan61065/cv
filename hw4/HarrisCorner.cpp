@@ -9,7 +9,7 @@ Mat image; //Mat->Matrix 宣告一個圖片變數
 
 Mat image2;
 
-void Sobel(Mat &src, Mat &resultX, Mat &resultY){
+void mySobel(Mat &src, Mat &resultX, Mat &resultY){
 	//use sobel 3*3 return Dx, Dy
 	resultX.create(src.size(), CV_32F);
 	resultY.create(src.size(), CV_32F);
@@ -34,14 +34,26 @@ void Sobel(Mat &src, Mat &resultX, Mat &resultY){
 	}
 }
 
-void HarrisCorner(Mat &src, Mat &dst, int blockSize, int ksize, double k){
-	dst.create(src.size(), src.type());
+
+void HarrisCorner(Mat &src, Mat &dst, int blockSize, double k){
+	dst.create(src.size(), CV_32F);
 	Mat Dx, Dy;
-	Sobel(src, Dx, Dy);
+	mySobel(src, Dx, Dy);
 
 	for(int i = 0; i < src.rows; i++){
 		for(int j = 0; j < src.cols; j++){
+			if(i == 0 || j == 0 || i == src.rows -1 || j == src.cols -1){
+				dst.at<float>(i, j) = 0.0;
+			}else{ 
+				//det(M)/trace(M) = (DxDx*DyDy - DxDy*DxDy)/(DxDx + DyDy)
+				dst.at<float>(i, j) = (
+					Dx.at<float>(i, j) * Dx.at<float>(i, j) 
+					* Dy.at<float>(i, j) * Dy.at<float>(i, j) 
+					- Dx.at<float>(i, j) );
 
+
+				//det(M) - k * (trace(M))^2 = (DxDx*DyDy - DxDy*DxDy) - k * (DxDx + DyDy)^2
+			}
 		}
 	}
 }
@@ -67,12 +79,20 @@ int main(int argc, char** argv )
 	imshow("Display Image", image);
 
 	Mat tempX, tempY;
-	/*
-	Sobel(image, tempX, tempY);
+	
+	mySobel(image, tempX, tempY);
 	tempX.convertTo(tempX, CV_8U);
-	tempY.convertTo(tempY, CV_8U);
+	//Sobel(image, tempY, CV_32F, 1, 0,  3, 1.0, 0, BORDER_DEFAULT);
+	//tempY.convertTo(tempY, CV_8U);
 	imshow("X", tempX);
-	imshow("Y", tempY);*/
+	//imshow("Y", tempY);
+	//imshow("sobelX", tempY);
+	Mat result;
+		cornerHarris(image, result, 2, 3, 0.0);
+	Mat dst_norm;
+	normalize( result, dst_norm, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
+	convertScaleAbs( dst_norm, dst_norm );
+	imshow("cvHarris", dst_norm);
 
 	waitKey(0);
 	return 0;
