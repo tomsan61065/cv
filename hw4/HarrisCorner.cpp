@@ -42,17 +42,26 @@ void HarrisCorner(Mat &src, Mat &dst, int blockSize, double k){
 
 	for(int i = 0; i < src.rows; i++){
 		for(int j = 0; j < src.cols; j++){
-			if(i == 0 || j == 0 || i == src.rows -1 || j == src.cols -1){
+			if(i == 0 || j == 0 || i >= src.rows - blockSize || j >= src.cols - blockSize){
 				dst.at<float>(i, j) = 0.0;
-			}else{ 
+			}else{
+				float dxx = 0.0;
+				float dyy = 0.0;
+				float dxy = 0.0;
+				for(int m = 0; m < blockSize; m++){
+					for(int n = 0; n < blockSize; n++){
+						dxx += Dx.at<float>(i+m, j+n) * Dx.at<float>(i+m, j+n);
+						dyy += Dy.at<float>(i+m, j+n) * Dy.at<float>(i+m, j+n);
+						dxy += Dx.at<float>(i+m, j+n) * Dy.at<float>(i+m, j+n);
+					}
+				}
 				//det(M)/trace(M) = (DxDx*DyDy - DxDy*DxDy)/(DxDx + DyDy)
-				dst.at<float>(i, j) = (
-					Dx.at<float>(i, j) * Dx.at<float>(i, j) 
-					* Dy.at<float>(i, j) * Dy.at<float>(i, j) 
-					- Dx.at<float>(i, j) );
-
-
 				//det(M) - k * (trace(M))^2 = (DxDx*DyDy - DxDy*DxDy) - k * (DxDx + DyDy)^2
+				if(k == 0){
+					dst.at<float>(i, j) = (dxx*dyy - dxy*dxy)/(dxx + dyy);
+				}else{
+					dst.at<float>(i, j) = (dxx*dyy - dxy*dxy) - k * (dxx + dyy)*(dxx + dyy);
+				}
 			}
 		}
 	}
@@ -80,19 +89,38 @@ int main(int argc, char** argv )
 
 	Mat tempX, tempY;
 	
-	mySobel(image, tempX, tempY);
-	tempX.convertTo(tempX, CV_8U);
+	//mySobel(image, tempX, tempY);
+	//tempX.convertTo(tempX, CV_8U);
 	//Sobel(image, tempY, CV_32F, 1, 0,  3, 1.0, 0, BORDER_DEFAULT);
 	//tempY.convertTo(tempY, CV_8U);
-	imshow("X", tempX);
+	//imshow("X", tempX);
 	//imshow("Y", tempY);
 	//imshow("sobelX", tempY);
+	
 	Mat result;
-		cornerHarris(image, result, 2, 3, 0.0);
-	Mat dst_norm;
-	normalize( result, dst_norm, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
-	convertScaleAbs( dst_norm, dst_norm );
-	imshow("cvHarris", dst_norm);
+	Mat cvResult;
+
+	//Opencv harris corner
+	cornerHarris(image, cvResult, 2, 3, 0.04);//常見介於 0.04 ~ 0.06
+	normalize( cvResult, cvResult, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
+	convertScaleAbs( cvResult, cvResult);
+	imshow("cvHarris", cvResult);
+
+
+	HarrisCorner(image, result, 2, 0.00);
+	normalize( result, result, 0, 255, NORM_MINMAX, CV_32FC1);
+	convertScaleAbs( result, result );
+	//result.convertTo(result, CV_8U);
+	imshow("textBookFormulaHarris", result);
+
+	Mat result2;
+	HarrisCorner(image, result2, 2, 0.04);
+	normalize( result2, result2, 0, 255, NORM_MINMAX, CV_32FC1);
+	convertScaleAbs( result2, result2 );
+	//result.convertTo(result, CV_8U);
+	imshow("cvFormulaHarris", result2);
+
+
 
 	waitKey(0);
 	return 0;
